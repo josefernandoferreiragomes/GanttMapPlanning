@@ -1,0 +1,153 @@
+﻿<html>
+<head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', { 'packages': ['gantt'] });
+        //google.charts.setOnLoadCallback(drawChart);
+        
+
+        function Theme(name, textTheme, startDate, endDate, effort, percComplete, precedence, elems, lane) {
+            this.Name = name;
+            this.TextTheme = textTheme;
+            this.StartDate = startDate;
+            this.EndDate = endDate;
+            this.Effort = effort;
+            this.PercComplete = percComplete;
+            
+            this.Precedence = precedence;
+            this.Elems = elems;
+            this.Lane = lane;
+            this.Duration = parseInt((this.Effort / (VelocidadeProgramadorSPMes * this.Elems)) * 30);
+        }
+        var ThemeList = Array();
+        var ThemesArray = Array();
+        var VelocidadeSP = 20
+        var BandaPFs = 70;
+        var VelocidadeMes =((VelocidadeSP*BandaPFs)/100)*2;
+        
+        var VelocidadePFsMes = (VelocidadeMes * BandaPFs) / 100;
+        var VelocidadeProgramadorSPMes = 9;
+
+        function daysToMilliseconds(days) {
+            return days * 24 * 60 * 60 * 1000;
+        }
+
+        function drawChart() {
+
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Task ID');
+            data.addColumn('string', 'Task Name');
+            data.addColumn('date', 'Start Date');
+            data.addColumn('date', 'End Date');
+            data.addColumn('number', 'Duration');
+            data.addColumn('number', 'Percent Complete');
+            data.addColumn('string', 'Dependencies');
+            
+            data.addRows(ThemesArray
+                //[
+                //['Research', 'Find sources', new Date(2015, 0, 1), null, daysToMilliseconds(5), 100, null],
+                //['Write', 'Write paper', null, new Date(2015, 0, 9), daysToMilliseconds(3), 25, 'Research'],
+                //['Cite', 'Create bibliography', null, new Date(2015, 0, 7), daysToMilliseconds(1), 20, 'Research'],
+                //['Complete', 'Hand in paper', null, new Date(2015, 0, 10), daysToMilliseconds(1), 0, 'Cite,Write'],
+                //['Outline', 'Outline paper', null, new Date(2015, 0, 6), daysToMilliseconds(1), 100, 'Research']
+                //['Theme1', ThemeList[0].TextTheme, ThemeList[0].StartDate, null, daysToMilliseconds(ThemeList[0].Duration), 0, null],
+                //['Theme2', ThemeList[1].TextTheme, ThemeList[1].StartDate, null, daysToMilliseconds(ThemeList[1].Duration), 0, "Theme1"]
+            //]
+            );
+              
+
+            var options = {
+                height: 275
+            };
+
+            var chart = new google.visualization.Gantt(document.getElementById('chart_div'));
+
+            chart.draw(data, options);
+        }
+        function fnInicializar() {
+            document.getElementById("txtVelocidadeSP").value = VelocidadeSP;
+            document.getElementById("txtBandaPFs").value = BandaPFs;
+            document.getElementById("txtVelocidadeProgSpMes").value = VelocidadeProgramadorSPMes;
+
+            document.getElementById("lblbVelocidadeMes").value = VelocidadeMes;
+            
+            document.getElementById("lbVelocidadePFsMes").value = VelocidadePFsMes;
+            
+        }
+        function parseText(param) {
+            if (param === undefined || param==="") {
+                param = null;
+            }
+            return param;
+            
+        }
+        function parseDate(tempDate) {
+            var objDate = null;
+            if (tempDate != null) {
+                objDate= new Date(tempDate);
+            }
+            return objDate;
+        }
+        function calculate() {
+            var name, textTheme, startDate, endDate, effort, percComplete, lane, elems, theme1, theme2, precedence, elems, textTotal;
+            textTotal = document.getElementById("txtArea").value;
+            
+            var lines = textTotal.split("\n");
+            var cols;
+            for (var i = 0; i < lines.length; i++) {
+                cols = lines[i].split("\t");
+                name = parseText(cols[0]);
+                textTheme = parseText(cols[1]) + " ("+parseText(cols[7]+ " elms)");
+                startDate = parseDate(parseText(cols[2]));
+                endDate = parseDate(parseText(cols[3]));
+                effort = parseInt(parseText(cols[4]));
+                percComplete = parseInt(parseText(cols[5]));
+                precedence = parseText(cols[6]);
+                elems = parseInt(cols[7]);
+
+                theme1 = new Theme(name, textTheme, startDate, endDate, effort, percComplete, precedence, elems);
+                ThemeList.push(theme1);
+            }
+            ThemeList.pop(lines.length - 1);
+            for (var j = 0; j < ThemeList.length; j++) {
+                var tempArray = new Array();
+                tempArray = [ThemeList[j].Name, ThemeList[j].TextTheme, ThemeList[j].StartDate, ThemeList[j].EndDate, daysToMilliseconds(ThemeList[j].Duration), ThemeList[j].PercComplete, ThemeList[j].Precedence];
+                ThemesArray.push(tempArray);
+            }
+        
+            drawChart();
+        }
+    </script>
+</head>
+<body>
+    <div id="chart_div"></div>
+    <div>
+        <p></p>
+        <form>
+            <label>VelocidadeSP</label>
+            <input type="number" id="txtVelocidadeSP" />
+
+            <label>BandaPFs</label>
+            <input type="number" id="txtBandaPFs" />
+
+            <label>VelocidadeProgramadorSPmes</label>
+            <input type="number" id="txtVelocidadeProgSpMes" />
+
+            <label>VelocidadeMes</label>
+            <input type="number" id="lblbVelocidadeMes">
+
+            <label>VelocidadePFsMes</label>
+            <input type="number" id="lbVelocidadePFsMes">
+
+            <p></p>
+            <label>From Excel:</label>
+            <textarea id="txtArea" style="width:800; height:300"></textarea>
+            <p></p>
+            <input type="button" value="Calculate" id="calculateBtn" onclick="calculate()" />
+            <p></p>
+            <input type="button" value="Inicializar" id="inicializarBtn" onclick="fnInicializar()" />
+            <p></p>
+        </form>
+    </div>
+</body>
+</html>
